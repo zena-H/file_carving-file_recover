@@ -5,7 +5,10 @@ class Partition:
     def __init__(self, data_file_path):
         self.data_file_path = data_file_path
         self.file = open(self.data_file_path,'rb')
-        self.mbr = self.file.read(SECTOR_SIZE)
+        self.sectors = self.file.read()
+        self.sectors = [self.sector[i*SECTOR_SIZE : (i+1)*SECTOR_SIZE] for i in range((len(self.sector) + SECTOR_SIZE -1) // SECTOR_SIZE]
+        self.file.close()
+        self.mbr = self.sectors[0]
         self.partition_table = self.mbr[partition_table_start:partition_table_start+48]
         if hexbinary_to_int(self.partition_table) == 0:
             # MBR 영역이 손상된 것으로 복구할 것인지 창을 띄우는 것을 구현해야함.
@@ -19,7 +22,8 @@ class Partition:
                 '2' : parse_partition_info(partition_id=2),
                 '3' : parse_partition_info(partition_id=3)
                }
-        self.partition_data = None
+        self.partiton_info = None
+        self.partition_data = {'partition_id' : None}
         
         del self.mbr
             
@@ -34,7 +38,7 @@ class Partition:
                 'partition_id'   : partition_id
                 'boot_flag'      : None,
                 'partition_type' : None,
-                'sector_size'    : None,
+                'partition_size'    : None,
                 'start_sector'   : None
             }
         boot_flag = partition[0] == 128
@@ -46,18 +50,17 @@ class Partition:
             'partition_id'   : partition_id
             'boot_flag'      : boot_flag,
             'partition_type' : partition_type,
-            'sector_size'    : hexbinary_to_int(sector_size) * SECTOR_SIZE
+            # 실제 partition byte 수는 sector_size * SECTOR_SIZE
+            'partition_size'    : hexbinary_to_int(sector_size)
             'start_sector'   : hexbinary_to_int(start_sector)
         }
         
     def parse_partition_data(self, partition_id):
-        self.partition_info = self.partition[partition_id]
-        self.file.read(self.partition_info['start_sector'] * SECTOR_SIZE)
-        self.partition_data = self.file.read(self.partition_info['sector_size'])
+        if self.parse_partition_info['partition_id'] != partition_id:
+            self.partition_info = self.partition[partition_id]
+            self.partition_data = self.sectors[self.partition_info['start_sector'] : self.partition_info['start_sector']+self.partition_info['partition_size']])
         
+    def recover_partition(self):
     
-    def chg_partition(self, partition_id):
-        self.file = open(self.data_file_path,'rb')
-        self.mbr = self.file.read(SECTOR_SIZE)
-        self.partition_data = None
+    
         
