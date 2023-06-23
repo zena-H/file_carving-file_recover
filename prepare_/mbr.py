@@ -9,13 +9,14 @@ partition_table_size = 16
 partition_table_start = 446
 
 partition_size = { 
-    "chs" : {
-	   "start" : [2,4],
+# 현재 chs는 호환성 문제로 남겨두었지만 값이 있더라도 사용하지 않음.
+    "chs" : {  
+	   "start" : [1,4],
 	   "end" : [4,7]
 	},
 	"lcs" : {
-	    "start" : [7,11],
-		"end" : [11,15]
+	    "start" : [8,12],
+		"end" : [12,16]
 	}	
 }
 
