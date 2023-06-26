@@ -8,53 +8,46 @@ class Partition:
         self.sectors = self.file.read()
         self.sectors = [self.sector[i*SECTOR_SIZE : (i+1)*SECTOR_SIZE] for i in range((len(self.sector) + SECTOR_SIZE -1) // SECTOR_SIZE]
         self.file.close()
-        self.mbr = self.sectors[0]
+        self.my_sector = 0
+        self.mbr = self.sectors[self.my_sector = 0]
         self.partition_table = self.mbr[partition_table_start:partition_table_start+48]
-        if hexbinary_to_int(self.partition_table) == 0:
+        if int.from_bytes(self.partition_table, byteorder='little') == 0:
             # MBR 영역이 손상된 것으로 복구할 것인지 창을 띄우는 것을 구현해야함.
             # 이후에는 VBR 위치 128(보통 128 섹터)을 찾아서 하나씩 찾는 방법을 수행해야함.
             self.partition = None
             
         else:
-            self.partition = {
-                '0' : parse_partition_info(partition_id=0),
-                '1' : parse_partition_info(partition_id=1),
-                '2' : parse_partition_info(partition_id=2),
-                '3' : parse_partition_info(partition_id=3)
-               }
+            self.partition = parse_partition_info()
+            
         self.partiton_info = None
         self.partition_data = {'partition_id' : None}
         
         del self.mbr
             
-    def parse_partition_info(self, partition_id=0):
+    def parse_partition_info(self, sector_id=0):
         """
         4개의 파티션 테이블 중 선택한 파티션의 정보를 가져옴
         파티션 사이즈는 요즘 chs를 사용하지 않는다하여 lcs 정보만 가져옴
         """
-        partition_info_data = self.partition_table[partition_id * partition_size : (partition_id+1)*partition_table_size]
-        if hexbinary_to_int(partition_info_data) == 0:
-            return {
+        partition = {}
+        for partition_id in range(4):
+            partition_info_data = self.partition_table[partition_id * partition_size : (partition_id+1)*partition_table_size]
+            if int.from_bytes(partition_info_data, byteorder='little') == 0:
+                break
+            boot_flag = partition[0] == 128
+            partition_type = bytes.fromhex(format(partition[4],'#04x'))
+            partition_type = partition_type_mapper[partition_type]
+            start_sector = partition_info_data[partition_size['lcs']['start'][0] : partition_size['lcs']['start'][1]]
+            sector_size = partition_info_data[partition_size['lcs']['end'][0] : partition_size['lcs']['end'][1]]
+            partition[partition_id]= {
                 'partition_id'   : partition_id
-                'boot_flag'      : None,
-                'partition_type' : None,
-                'partition_size'    : None,
-                'start_sector'   : None
+                'boot_flag'      : boot_flag,
+                'partition_type' : partition_type,
+                # 실제 partition byte 수는 sector_size * SECTOR_SIZE
+                'partition_size'    : int.from_bytes(sector_size, byteorder='little')
+                'start_sector'   : int.from_bytes(start_sector, byteorder='little')
             }
-        boot_flag = partition[0] == 128
-        partition_type = bytes.fromhex(format(partition[4],'#04x'))
-        partition_type = partition_type_mapper[partition_type]
-        start_sector = partition_info_data[partition_size['lcs']['start'][0] : partition_size['lcs']['start'][1]]
-        sector_size = partition_info_data[partition_size['lcs']['end'][0] : partition_size['lcs']['end'][1]]
-        return {
-            'partition_id'   : partition_id
-            'boot_flag'      : boot_flag,
-            'partition_type' : partition_type,
-            # 실제 partition byte 수는 sector_size * SECTOR_SIZE
-            'partition_size'    : hexbinary_to_int(sector_size)
-            'start_sector'   : hexbinary_to_int(start_sector)
-        }
-        
+        return partition
     def parse_partition_data(self, partition_id):
         if self.parse_partition_info['partition_id'] != partition_id:
             self.partition_info = self.partition[partition_id]

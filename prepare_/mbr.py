@@ -59,10 +59,3 @@ partition_type_mapper = {
 	b"\xFb" : "Vmware FileSystem",
 	b"\xFC" : "Vmware swap"
 }
-
-def hexbinary_to_int(binary_str):
-    hex_str = binary_str[::-1]
-    hex_str = binascii.hexlify(hex_str)
-    return int(hex_str,16)
-    
-   
