@@ -6,7 +6,7 @@ class Partition:
         self.data_file_path = data_file_path
         self.file = open(self.data_file_path,'rb')
         self.sectors = self.file.read()
-        self.sectors = [self.sector[i*SECTOR_SIZE : (i+1)*SECTOR_SIZE] for i in range((len(self.sector) + SECTOR_SIZE -1) // SECTOR_SIZE]
+        self.sectors = { i : self.sector[i*SECTOR_SIZE : (i+1)*SECTOR_SIZE] for i in range((len(self.sector) + SECTOR_SIZE -1) // SECTOR_SIZE)}
         self.file.close()
         self.my_sector = 0
         self.mbr = self.sectors[self.my_sector = 0]
